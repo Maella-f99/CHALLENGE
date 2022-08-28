@@ -118,20 +118,47 @@ export class ChallengeComponent implements AfterViewInit {
     return this.challengeService.getSystem(system_id)?.name;
   }
 
+  //////////////////////////////////////////////////////////////////////////////////////////////
   /**
    * TODO: Récupérer le nombre de systemes par environnement
    * @returns {PieData[]} sous la forme [{name, value}]
    */
   get systemByEnvData(): PieData[] {
-    return [];
+    //Recuperation des environnements depuis le service
+    let environments = this.challengeService.getEnvironments;
+    //Tableau resultat
+    let systemsPerEnv: PieData[] = [];
+
+    //Pour chaque environnement, je recupere le nom et le nombre de systemes et je pousse dans mon tableau resultat
+    for (const val of environments) {
+      let data = {name: val.name, value: val.systems.length};
+      systemsPerEnv.push(data);
+    }
+
+    return systemsPerEnv;
   }
 
+  //////////////////////////////////////////////////////////////////////////////////////////////
   /**
    * TODO: Récupérer le nombre d'assets par systeme depuis this.systemsIdsForAssetPieChart
    * @returns {PieData[]} sous la forme [{name, value}]
    */
   get assetBySystemData(): PieData[] {
-    return [];
+
+    //Recuperation des sytemes depuis le service
+    let system = this.challengeService.getSystems;
+
+    //Tableau résultat
+    let assetPerSys: PieData[] = [];
+
+    //Pour chaque système, je recupere le nom et le nombre d'assets' et je pousse dans mon tableau resultat
+    for (const val of system) {
+      let data = {name: val.name, value: val.recursiveAssets.length};
+      assetPerSys.push(data);
+    }
+
+    
+    return assetPerSys;
   }
 
   /**
@@ -141,12 +168,14 @@ export class ChallengeComponent implements AfterViewInit {
     return this.challengeService.timeframe.map(hour => moment(hour).format('lll')).slice(0, 24);
   }
 
+  //////////////////////////////////////////////////////////////////////////////////////////////
   /**
    * TODO: récupérer les jours depuis challengeService.timeframe
    * tip: utiliser moment(hour).format('LL') pour récupérer le jour pour une heure donnée
    */
   get xAxisByDays(): string[] {
-    return [];
+    let jours = this.challengeService.timeframe.map(hour => moment(hour).format('LL'));
+    return jours;
   }
 
   /**
@@ -160,6 +189,7 @@ export class ChallengeComponent implements AfterViewInit {
       .map(asset => asset.label)
   }
 
+  //////////////////////////////////////////////////////////////////////////////////////////////
   /**
    * TODO: récupérer les valeurs des températures des assets
    * seul data[] doit être modifié
@@ -172,10 +202,11 @@ export class ChallengeComponent implements AfterViewInit {
       .map(asset => ({
         name: asset.label,
         type: 'line',
-        data: []
+        data: asset.data.filter(assetData => assetData.name === "temperature")[0].values.map(value => value.value)
       }));
   }
 
+  //////////////////////////////////////////////////////////////////////////////////////////////
   /**
    * récupérer le nombre d'objets fabriqués par jour par machine
    * TODO: construire la map machineOutputData de telle sorte a ce qu'elle renvoie la somme des outputs par jour
@@ -183,6 +214,12 @@ export class ChallengeComponent implements AfterViewInit {
    */
   getSerieForMachine(machine: Asset): BarSeriesOption {
     const machineOutputData = new Map<string, number>();
+    let outputData = machine.data.filter(assetData => assetData.name === "output")[0].values;
+
+    outputData.forEach(output => {
+      machineOutputData.set(moment(output.timestamp).format('LL'), output.value)
+    });
+    
     return {
       name: machine.label,
       type: 'bar',
